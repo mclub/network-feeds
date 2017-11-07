@@ -336,7 +336,7 @@ fi
 
 }
 
-do_pause()
+do_stop()
 {
 	local vt_network=`uci get minivtun.@minivtun[0].network 2>/dev/null`
 	local vt_proxy_mode=`uci get minivtun.@minivtun[0].proxy_mode 2>/dev/null`
@@ -367,15 +367,6 @@ do_pause()
 	# it will be brought down along with the interface.
 	while ip rule del fwmark $VPN_ROUTE_FWMARK table $VPN_IPROUTE_TABLE 2>/dev/null; do :; done
 
-	return 0
-}
-
-do_stop()
-{
-	do_pause
-
-	local vt_network=`uci get minivtun.@minivtun[0].network 2>/dev/null`
-	local vt_ifname="minivtun-$vt_network"
 	#ifdown $vt_network
 	while iptables -D FORWARD -o $vt_ifname -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; do :; done
 	while iptables -t nat -D POSTROUTING -o $vt_ifname -j MASQUERADE 2>/dev/null; do :; done
@@ -390,7 +381,6 @@ do_stop()
 case "$1" in
 	-s) do_start_wait;;
 	-k) do_stop;;
-	-p) do_pause;;
 	-r) do_stop; sleep 1; do_start_wait;;
 	*)
 		 echo "Usage:"
