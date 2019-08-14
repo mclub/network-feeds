@@ -225,6 +225,7 @@ getsmartlinks.com
 ghost.org
 gimpshop.com
 github.com
+githubusercontent.com
 git-scm.com
 givemesomethingtoread.com
 glennhilton.com
@@ -341,6 +342,7 @@ mininova.org
 mixedmedialabs.com
 modfetish.com
 m.oulove.org
+mojim.com
 movabletype.com
 mrdoob.com
 m-team.cc
@@ -355,6 +357,8 @@ my.keso.cn
 myopenid.com
 my.opera.com
 myshare.url.com.tw
+nasa.gov
+nasaspaceflight.com
 navicat.com
 navigeaters.com
 navy.mil
