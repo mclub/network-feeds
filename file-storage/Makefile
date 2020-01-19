@@ -6,7 +6,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=file-storage
-PKG_VERSION:=20150617
+PKG_VERSION:=20200101
 PKG_RELEASE:=
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
@@ -17,7 +17,7 @@ define Package/file-storage
   CATEGORY:=Network
   TITLE:=Storage device automount and autoconfig scripts
   MAINTAINER:=Justin Liu <rssnsj@gmail.com>
-  DEPENDS:=+samba36-server +kmod-usb-storage +kmod-fs-ext4 +kmod-fs-vfat +kmod-nls-cp437 +kmod-nls-iso8859-1 +kmod-nls-utf8 +ntfs-3g
+  DEPENDS:=+samba36-server +kmod-usb-storage +kmod-fs-ext4 +kmod-fs-vfat +kmod-nls-cp437 +kmod-nls-iso8859-1 +kmod-nls-utf8 +ntfs-3g +blkid
 endef
 
 define Build/Prepare
