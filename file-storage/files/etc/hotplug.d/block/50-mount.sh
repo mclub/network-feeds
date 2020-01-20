@@ -25,7 +25,7 @@ call_mount()
 
 	case "$fs_type" in
 		ntfs*)
-			mount_opts="$mount_opts -t ntfs-3g -o dmask=0000,fmask=0000"
+			mount_opts="$mount_opts -t ntfs-3g -o dmask=0000,fmask=0000,noatime,async,big_writes"
 			;;
 		vfat)
 			mount_opts="$mount_opts -t vfat -o dmask=0000,fmask=0000"
