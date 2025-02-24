@@ -131,16 +131,21 @@ do_start_wait()
 	local vt_local_prefix=`__netmask_to_bits "$vt_local_netmask"`
 	local vt_gfwlist=`__gfwlist_by_mode $vt_proxy_mode`
 	local vt_np_ipset="china"
-	local cmdline_opts=""
-	[ -n "$vt_mtu" ] && cmdline_opts="-m$vt_mtu"
+
+	if [ -z "$vt_mtu" ]; then
+		vt_mtu=1400
+	fi
+
+	local cmd_opts=""
 
 	# -----------------------------------------------------------------
 	# NOTICE: Empty '$vt_password' is for no encryption
 	/usr/sbin/minivtun -r [$vt_server_addr]:$vt_server_port \
 		-a $vt_local_ipaddr/$vt_local_prefix -n minivtun-go \
-		-e "$vt_password" -t "$vt_algorithm" $cmdline_opts -d \
+		-e "$vt_password" -t "$vt_algorithm" -m $vt_mtu \
 		-w -D -v 0.0.0.0/0 -T $VPN_ROUTE_TABLE -M 900 \
-		-p /var/run/minivtun-go.pid || return 1
+		-p /var/run/minivtun-go.pid -H /var/run/minivtun-go.health \
+		$cmd_opts -d || return 1
 
 	ip rule add fwmark $VPN_ROUTE_FWMARK table $VPN_ROUTE_TABLE
 
@@ -207,12 +212,20 @@ do_start_wait()
 	iptables -t mangle -I OUTPUT -p udp --dport 53 -j minivtun_go  # DNS queries over tunnel
 
 	# -----------------------------------------------------------------
-	mkdir -p /var/etc/dnsmasq-go.d
+	local extra_dnsmasq_conf="/var/etc/dnsmasq-go.d"
+	mkdir -p $extra_dnsmasq_conf
+	uci -q get dhcp.@dnsmasq[0].addnmount | grep "$extra_dnsmasq_conf" >/dev/null 2>&1
+	if [ $? -eq 1 ]; then
+		echo "Adding $extra_dnsmasq_conf to dnsmasq access path"
+		uci -q add_list dhcp.@dnsmasq[0].addnmount="$extra_dnsmasq_conf"
+		uci -q commit dhcp
+	fi
+
 	###### Anti-pollution configuration ######
 	if [ -n "$vt_safe_dns" ]; then
 		( cat /etc/gfwlist/$vt_gfwlist; cat /etc/gfwlist/$vt_gfwlist.* 2>/dev/null; ) | \
 			awk -vs="$vt_safe_dns#$vt_safe_dns_port" '!/^$/&&!/^#/{printf("server=/%s/%s\n",$0,s)}' \
-			> /var/etc/dnsmasq-go.d/01-pollution.conf
+			> $extra_dnsmasq_conf/01-pollution.conf
 	else
 		logger_warn "WARNING: Not using secure DNS, DNS resolution might be polluted if you are in China."
 	fi
@@ -222,16 +235,16 @@ do_start_wait()
 		M|V)
 			( cat /etc/gfwlist/$vt_gfwlist; cat /etc/gfwlist/$vt_gfwlist.* 2>/dev/null; ) | \
 				awk '!/^$/&&!/^#/{printf("ipset=/%s/'"$vt_gfwlist"'\n",$0)}' \
-				> /var/etc/dnsmasq-go.d/02-ipset.conf
+				> $extra_dnsmasq_conf/02-ipset.conf
 			;;
 	esac
 
 	# -----------------------------------------------------------------
 	###### Restart main 'dnsmasq' service if needed ######
-	if ls /var/etc/dnsmasq-go.d/* >/dev/null 2>&1; then
+	if ls $extra_dnsmasq_conf/* >/dev/null 2>&1; then
 		mkdir -p /tmp/dnsmasq.d
 		cat > /tmp/dnsmasq.d/dnsmasq-go.conf <<EOF
-conf-dir=/var/etc/dnsmasq-go.d
+conf-dir=$extra_dnsmasq_conf
 EOF
 		/etc/init.d/dnsmasq restart
 
@@ -240,6 +253,7 @@ EOF
 		local i
 		for i in 0 1 2 3 4 5 6 7; do
 			sleep 1
+			echo "Checking dnsmasq... $i"
 			if [ -f /var/run/dnsmasq.pid ]; then
 				local dnsmasq_pid=`cat /var/run/dnsmasq.pid`
 			elif [ -f /var/run/dnsmasq/dnsmasq.pid ]; then
