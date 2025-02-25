@@ -11,6 +11,11 @@ tw
 uk
 us
 
+docker.com
+docker.io
+x.com
+x.ai
+
 tiktok.com
 tiktokv.com
 tiktokcdn.com
